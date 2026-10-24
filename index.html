@@ -108,6 +108,12 @@ button.alt.on{background:linear-gradient(#f4bd5c,#d08a22)}
 #skg{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;width:min(96vw,900px)}
 .skc{flex:1 1 250px;display:flex;flex-direction:column;gap:8px}.skc h3{margin:0;color:var(--amber);font-weight:400;letter-spacing:.1em}
 button.sk{text-align:left;font-size:16px;padding:8px 12px}button.sk span{float:right;color:var(--amber)}button.sk.max{border-color:var(--amber);background:#e8a23a22}
+#cine{display:none;position:fixed;inset:0;z-index:15;cursor:pointer}body.cine #cine{display:block}
+.cb{position:absolute;left:0;right:0;height:12vh;background:#000}.cb.top{top:0}.cb.bot{bottom:0}
+#cint{position:absolute;left:0;right:0;bottom:15vh;text-align:center;font-size:clamp(18px,3.4vw,30px);color:#f3e6c4;text-shadow:0 2px 6px #000;padding:0 8vw;opacity:0}
+#cint.on{animation:cinT 1s forwards}@keyframes cinT{to{opacity:1}}
+#cins{position:absolute;right:16px;bottom:3vh;font-size:13px;color:#c9b98f;opacity:.7}
+body.cine #hud,body.cine #mbtn,body.cine #joy,body.cine #tb,body.cine #tt,body.cine #lowhp{display:none!important}
 </style></head><body>
 <div id="hud"><div id="bb"><div id="bbn"></div><div class="bar"><i id="bbf"></i></div></div><div id="cross"></div><div id="obj"></div><div id="aw"></div><div id="msg"></div><div id="prompt"></div><div id="hp"><div id="hpf"></div></div><div id="stb"><i id="stf"></i></div><div id="vis"></div><pre id="dbg"></pre><canvas id="mm" width="110" height="110"></canvas><div id="ammo"></div></div>
 <div id="menu"><h1>Echoes of the Forgotten Kingdom</h1>
@@ -676,7 +682,7 @@ loop();window.__echoes={P,G,E,W};
 // ---------- Enhancement pass: progression, Echo Burst, shards, wraiths, effects ----------
 (()=>{
 "use strict";
-const D=G.dep={sk:{},lvl:1,xp:0,res:0,chain:0,chainT:0,sh:0,shards:[],maxChain:0,wk:0,up2:0,pc0:0,pingT:0};
+const D=G.dep={fr:{gate:0,chest:0,rime:0,bp:0,fl:[0,0,0],rimeDead:0,introB:0},sk:{},lvl:1,xp:0,res:0,chain:0,chainT:0,sh:0,shards:[],maxChain:0,wk:0,up2:0,pc0:0,pingT:0};
 const XPV={guard:20,archer:25,armor:45,elite:70,wraith:40,boss:200,echo:400};
 const xpNeed=l=>Math.round(50*Math.pow(l,1.45)),MAXLV=20;
 const rr=(a,b)=>a+Math.random()*(b-a);
@@ -714,7 +720,7 @@ function addRes(v){if(D.nr)return;const was=D.res;D.res=Math.min(100,D.res+v*(D.
 function levelUp(){D.lvl++;applyUp();P.hp=P.max;pop('LEVEL '+D.lvl,'+8 max health, +3.5% damage, +1 skill point (K)');[0,4,7,12].forEach((n,i)=>setTimeout(()=>sfx(440*Math.pow(2,n/12),.25,'triangle',.09),i*110));ring(P.x,P.z,5,0xffe08a,.15,.9);souls(P.x,P.z,26,0xffe08a,.2)}
 function gainXp(v){if(D.lvl>=MAXLV)return;D.xp+=v;while(D.lvl<MAXLV&&D.xp>=xpNeed(D.lvl)){D.xp-=xpNeed(D.lvl);levelUp()}}
 function onKill(e){gainXp(XPV[e.type]||20);addRes(8);if(sk('sip'))P.hp=Math.min(P.max,P.hp+4*sk('sip'));if(D.chain>=5)G.coins+=2;if(e.type==='wraith')D.wk++;dmgNum(e.x,3.6,e.z,'+'+(XPV[e.type]||20)+'xp','#8ad0ff');souls(e.x,e.z,e.boss?44:14,e.type==='wraith'?0x99ddff:0xb89aff);ring(e.x,e.z,e.boss?10:3.2,0xb89aff,.1,.7)}
-const _he=hitEnemy;hitEnemy=function(e,dmg){if(e.dead)return;dmg*=1+.035*(D.lvl-1)+(D.sh>=12?.1:0);if(!D.nr){if(P.wp===0)dmg*=1+.08*sk('keen');if(sk('exe')&&e.hp<e.max*.3)dmg*=1.3;if(e.st!=='chase')dmg*=1+.25*sk('ass')}_he(e,dmg);if(dmg>0&&!D.nr){D.chain++;D.chainT=3.2;D.maxChain=Math.max(D.maxChain,D.chain);addRes(2.5+Math.min(5,D.chain*.4))}if(e.dead)onKill(e)};
+const _he=hitEnemy;hitEnemy=function(e,dmg){if(e.dead)return;dmg*=1+.035*(D.lvl-1)+(D.sh>=12?.1:0);if(!D.nr){if(P.wp===0)dmg*=1+.08*sk('keen');if(P.wp===0&&D.fr.rime)dmg*=1.25;if(sk('exe')&&e.hp<e.max*.3)dmg*=1.3;if(e.st!=='chase')dmg*=1+.25*sk('ass')}_he(e,dmg);if(dmg>0&&!D.nr){D.chain++;D.chainT=3.2;D.maxChain=Math.max(D.maxChain,D.chain);addRes(2.5+Math.min(5,D.chain*.4))}if(e.dead)onKill(e)};
 // ---- Echo Burst ----
 function echoBurst(){if(!G.running||G.paused||G.over)return;if(D.res<100){say('The Echo stirs ('+Math.floor(D.res)+'%)');return}D.res=0;D.nr=1;const dm=(38+D.lvl*3)*(D.sh>=4?1.5:1)*(D.up2?1.4:1)*(1+.2*sk('res')),R=14*(sk('nova')?1.3:1);
 ring(P.x,P.z,R,0xa8d4ff,.14,.7);ring(P.x,P.z,9,0xffffff,.16,.45);souls(P.x,P.z,30,0xa8d4ff,.4);
@@ -742,13 +748,13 @@ SI.push({x:7,z:12,label:'Rest at the bonfire (heal, restock, save)',on:()=>true,
 const _rs=renderShop;renderShop=function(){_rs();const el=$('shopl');[['pot','Healing Potion',25,'Restores health. Press Z.',1,()=>{G.pot=(G.pot||0)+1}],['tonic','Echo Tonic',45,'Fills the Echo meter',1,()=>{D.res=100;say('Echo ready: press X')}],['edge2','Resonant Edge',90,'Echo Burst +40% damage',0,()=>{D.up2=1}]].forEach(([id,n,c,d,rep,fn])=>{const own=!rep&&D.up2,b=document.createElement('button');b.className='alt';b.disabled=!!own||G.coins<c;b.innerHTML='<b>'+n+'</b> &mdash; '+(own?'owned':c+' coins')+'<br><small>'+d+'</small>';b.onclick=()=>{if(G.coins<c)return;G.coins-=c;fn();sfx(700,.15,'sine',.1);renderShop()};el.appendChild(b)})};
 // ---- Journal + achievements ----
 const ck=v=>v?'✓':'☐';
-ACH.push(['seeker','Echo Seeker','Collect all 12 Echo Shards'],['vet','Veteran','Reach level 8'],['chain','Relentless','Reach a x10 chain'],['wbane','Wraithbane','Defeat 3 wraiths']);
-const _ac=achCheck;achCheck=function(){_ac();const t={seeker:D.sh>=12,vet:D.lvl>=8,chain:D.maxChain>=10,wbane:D.wk>=3};for(const [id,n] of ACH.slice(8))if(t[id]&&!G.ach[id]){G.ach[id]=1;say('★ Achievement: '+n);sfx(900,.4,'sine',.1,500)}};
-const _ah=achHtml;achHtml=function(){return '<h3>Hero</h3><p>Level '+D.lvl+' ('+D.xp+'/'+xpNeed(D.lvl)+' XP) &middot; Best chain x'+D.maxChain+' &middot; Wraiths felled '+D.wk+'</p><h3>Echo Shards ('+D.sh+'/12)</h3><ul><li>'+ck(D.sh>=4)+' 4 shards: Echo Burst +50% damage</li><li>'+ck(D.sh>=8)+' 8 shards: the Echo fills 30% faster</li><li>'+ck(D.sh>=12)+' 12 shards: Echo-Touched, +10% damage, +10 max health, +100 coins</li></ul>'+_ah()};
+ACH.push(['seeker','Echo Seeker','Collect all 12 Echo Shards'],['vet','Veteran','Reach level 8'],['chain','Relentless','Reach a x10 chain'],['wbane','Wraithbane','Defeat 3 wraiths'],['frost','Frostbreaker','Defeat the Rimewarden in Frostfall Reach']);
+const _ac=achCheck;achCheck=function(){_ac();const t={seeker:D.sh>=12,vet:D.lvl>=8,chain:D.maxChain>=10,wbane:D.wk>=3,frost:!!D.fr.rimeDead};for(const [id,n] of ACH.slice(8))if(t[id]&&!G.ach[id]){G.ach[id]=1;say('★ Achievement: '+n);sfx(900,.4,'sine',.1,500)}};
+const _ah=achHtml;achHtml=function(){return '<h3>Hero</h3><p>Level '+D.lvl+' ('+D.xp+'/'+xpNeed(D.lvl)+' XP) &middot; Best chain x'+D.maxChain+' &middot; Wraiths felled '+D.wk+'</p><h3>Echo Shards ('+D.sh+'/12)</h3><ul><li>'+ck(D.sh>=4)+' 4 shards: Echo Burst +50% damage</li><li>'+ck(D.sh>=8)+' 8 shards: the Echo fills 30% faster</li><li>'+ck(D.sh>=12)+' 12 shards: Echo-Touched, +10% damage, +10 max health, +100 coins</li></ul>'+frostHtml()+_ah()};
 // ---- Save / load / new game+ ----
-const _sv=save;save=function(){_sv();try{localStorage.setItem('echoesDepth',JSON.stringify({lvl:D.lvl,xp:D.xp,res:D.res,shards:D.shards,maxChain:D.maxChain,wk:D.wk,up2:D.up2,sk:D.sk}))}catch(e){}};
-const _ld=loadSave;loadSave=function(){const r=_ld();if(r){try{const d=JSON.parse(localStorage.getItem('echoesDepth')||'null');if(d){Object.assign(D,{lvl:d.lvl||1,xp:d.xp||0,res:d.res||0,shards:d.shards||[],maxChain:d.maxChain||0,wk:d.wk||0,up2:d.up2||0,sk:d.sk||{}});D.sh=D.shards.length;SH.forEach(s=>s.g.visible=!D.shards.includes(s.i));applyUp();P.hp=Math.min(P.hp,P.max);D.pc0=G.pc||0}}catch(e){}}return r};
-const _vic=victory;victory=function(){try{localStorage.setItem('echoesLvl',JSON.stringify({lvl:D.lvl,sk:D.sk}))}catch(e){}_vic()};
+const _sv=save;save=function(){_sv();try{localStorage.setItem('echoesDepth',JSON.stringify({lvl:D.lvl,xp:D.xp,res:D.res,shards:D.shards,maxChain:D.maxChain,wk:D.wk,up2:D.up2,sk:D.sk,fr:D.fr}))}catch(e){}};
+const _ld=loadSave;loadSave=function(){const r=_ld();if(r){try{const d=JSON.parse(localStorage.getItem('echoesDepth')||'null');if(d){Object.assign(D,{lvl:d.lvl||1,xp:d.xp||0,res:d.res||0,shards:d.shards||[],maxChain:d.maxChain||0,wk:d.wk||0,up2:d.up2||0,sk:d.sk||{}});if(d.fr){Object.assign(D.fr,d.fr);D.fr.fl=d.fr.fl||[0,0,0]}D.sh=D.shards.length;SH.forEach(s=>s.g.visible=!D.shards.includes(s.i));applyUp();P.hp=Math.min(P.hp,P.max);D.pc0=G.pc||0;frostRestore()}}catch(e){}}return r};
+const _vic=victory;victory=function(){if(RIME&&RIME.dead&&!(ECHO&&ECHO.dead)){rimeDown();return}try{localStorage.setItem('echoesLvl',JSON.stringify({lvl:D.lvl,sk:D.sk}))}catch(e){}_vic();epilogue()};
 try{if(G.ng){{const c=JSON.parse(localStorage.getItem('echoesLvl')||'1');D.lvl=Math.max(1,typeof c==='object'?c.lvl:+c||1);if(c&&c.sk)D.sk=c.sk}applyUp();P.hp=P.max}}catch(e){}
 $('bnew').addEventListener('click',()=>{if($('bnew').textContent.startsWith('Tap again'))try{localStorage.removeItem('echoesDepth');localStorage.removeItem('echoesLvl')}catch(e){}},true);
 // ---- Title screen ----
@@ -774,20 +780,20 @@ for(const q of RINGS)if(q.l>0){q.l-=dt;const k=1-Math.max(0,q.l)/q.d;q.m.scale.s
 // souls
 {let any=false;for(let i=0;i<SN;i++){if(SL[i]>0){SL[i]-=dt;SP[i*3]+=SV[i].x*dt;SP[i*3+1]+=SV[i].y*dt;SP[i*3+2]+=SV[i].z*dt;SV[i].multiplyScalar(1-dt*.8);if(SL[i]<=0)SP[i*3+1]=-999;any=true}}if(any)SG.attributes.position.needsUpdate=true;SG.attributes.color.needsUpdate=any}
 // leaves / motes
-{const a=LG.attributes.position,dk=P.z<-142,ash=P.x<-44&&P.z<-15&&P.z>-65;LCOL.setHex(dk?0xa88aff:ash?0xff9a4a:0xc8f08a);LPM.color.lerp(LCOL,Math.min(1,dt*2));for(let i=0;i<LN;i++){const fall=dk?-.15:ash?-.5:.9;a.setXYZ(i,P.x+((LO[i*3]+tm*.9+Math.sin(tm+i)*1.2)%30+30)%30-15,((LO[i*3+1]-tm*fall)%9+9)%9,P.z+((LO[i*3+2]+tm*.5)%30+30)%30-15)}a.needsUpdate=true}
+{const a=LG.attributes.position,dk=P.z<-142,fr=inFrost(P.x,P.z),ash=!fr&&P.x<-44&&P.z<-15&&P.z>-65;LCOL.setHex(dk?0xa88aff:fr?0xeaf6ff:ash?0xff9a4a:0xc8f08a);LPM.color.lerp(LCOL,Math.min(1,dt*2));for(let i=0;i<LN;i++){const fall=dk?-.15:fr?2.4:ash?-.5:.9;a.setXYZ(i,P.x+((LO[i*3]+tm*.9+Math.sin(tm+i)*1.2)%30+30)%30-15,((LO[i*3+1]-tm*fall)%9+9)%9,P.z+((LO[i*3+2]+tm*.5)%30+30)%30-15)}a.needsUpdate=true}
 shardsUpd(tm,play);hpBarUpd();
 // boss slam telegraph + shockwave
 {let tel=0;for(const e of E){if(!e.boss||e.dead)continue;if(e._sw!==undefined&&e.sw>e._sw+1)ring(e.x,e.z,9.5,0xffaa33,.15,.55);e._sw=e.sw;if(e.st==='chase'&&e.sw<1.1&&e.sw>0){tel=1;TEL.position.set(e.x,.13,e.z);TEL.material.opacity=.35+.5*Math.abs(Math.sin(tm*14))}}TEL.visible=!!tel}
 // fov kick
-{const kick=play?((K.ShiftLeft&&(K.KeyW||K.jy)&&P.sta>4&&!P.crouch)?5:0)+(D.fovK||0)-(P.atkT>0?2:0):0;D.fovK=Math.max(0,(D.fovK||0)-dt*40);const t=CFG.fov+kick;if(Math.abs(cam.fov-t)>.05){cam.fov+=(t-cam.fov)*Math.min(1,dt*7);cam.updateProjectionMatrix()}}
+if(!CN.on){const kick=play?((K.ShiftLeft&&(K.KeyW||K.jy)&&P.sta>4&&!P.crouch)?5:0)+(D.fovK||0)-(P.atkT>0?2:0):0;D.fovK=Math.max(0,(D.fovK||0)-dt*40);const t=CFG.fov+kick;if(Math.abs(cam.fov-t)>.05){cam.fov+=(t-cam.fov)*Math.min(1,dt*7);cam.updateProjectionMatrix()}}
 ambUpd(dt);
 if(!play)return;
 if(D.chainT>0){D.chainT-=dt;if(D.chainT<=0){D.chain=0}}
 if((G.pc||0)>D.pc0){D.pc0=G.pc;addRes(25);pop('PARRY');if(sk('rip'))P.hp=Math.min(P.max,P.hp+8*sk('rip'))}
 if(sk('wind')&&!K.ShiftLeft)P.sta=Math.min(100,P.sta+dt*7*sk('wind'));
-wraithUpd(dt)}
+wraithUpd(dt);frostUpd(dt)}
 // ---- Skill tree ----
-const sk=id=>D.sk[id]||0,spPts=()=>Math.max(0,D.lvl-1-Object.values(D.sk).reduce((a,b)=>a+b,0));
+const sk=id=>D.sk[id]||0,spPts=()=>Math.max(0,D.lvl-1+(D.fr.bp||0)-Object.values(D.sk).reduce((a,b)=>a+b,0));
 const SK=[{b:'Blade',id:'keen',n:'Keen Edge',m:3,d:'+8% sword damage per rank'},{b:'Blade',id:'rip',n:'Riposte',m:2,d:'Parrying heals 8 health per rank',req:['keen',1]},{b:'Blade',id:'exe',n:'Executioner',m:1,d:'+30% damage to enemies below 30% health',req:['keen',2]},{b:'Blade',id:'iron',n:'Iron Skin',m:3,d:'Take 6% less damage per rank',req:['rip',1]},
 {b:'Shadow',id:'light',n:'Light Step',m:3,d:'Enemies notice you from 8% less distance per rank'},{b:'Shadow',id:'ass',n:'Assassin',m:2,d:'+25% damage to unaware enemies per rank',req:['light',1]},{b:'Shadow',id:'wind',n:'Second Wind',m:3,d:'Stamina recovers faster when not running',req:['light',2]},{b:'Shadow',id:'scav',n:'Scavenger',m:2,d:'+15% chance of extra loot per rank',req:['ass',1]},
 {b:'Echo',id:'att',n:'Attunement',m:3,d:'Echo meter fills 15% faster per rank'},{b:'Echo',id:'res',n:'Resonant Burst',m:3,d:'Echo Burst +20% damage per rank',req:['att',1]},{b:'Echo',id:'sip',n:'Soul Siphon',m:2,d:'Kills heal 4 health per rank',req:['att',2]},{b:'Echo',id:'nova',n:'Echo Nova',m:1,d:'Echo Burst radius +30% and refunds 25% of the meter',req:['res',2]}];
@@ -800,11 +806,75 @@ let fromMenu=false;
 function open(){if(ov.style.display==='flex')return;fromMenu=!G.running;if(!fromMenu){G.shop=true;G.paused=true;document.exitPointerLock&&document.exitPointerLock()}render();ov.style.display='flex'}
 function close(){ov.style.display='none';if(!fromMenu){G.shop=false;G.paused=false;if(!TOUCH&&G.running&&R.domElement.requestPointerLock)R.domElement.requestPointerLock()}}
 $('skx').onclick=close;$('bsk').onclick=open;addEventListener('keydown',e=>{if(e.code==='KeyK'&&G.running&&!e.repeat&&!G.over){if(ov.style.display==='flex')close();else if(!G.paused)open()}})}
+// ---- Cutscenes ----
+const CN={on:false,shots:[],i:0,t:0,after:null,def:null};
+{const o=document.createElement('div');o.id='cine';o.innerHTML='<div class="cb top"></div><div class="cb bot"></div><div id="cint"></div><div id="cins">Click or press Space to skip</div>';document.body.appendChild(o);o.addEventListener('click',()=>cineEnd());o.addEventListener('touchstart',e=>{e.preventDefault();cineEnd()},{passive:false})}
+const ease=k=>k*k*(3-2*k),mix=(a,b,k)=>a+(b-a)*k;
+function cineText(){const el=$('cint'),s=CN.shots[CN.i];el.classList.remove('on');el.textContent=s&&s.text||'';void el.offsetWidth;el.classList.add('on')}
+function cine(shots,after){if(CN.on)return;CN.on=true;CN.shots=shots;CN.i=0;CN.t=0;CN.after=after||null;CN.wasPaused=G.paused;CN.wasShop=G.shop;G.paused=true;G.shop=true;document.body.classList.add('cine');cineText()}
+function cineEnd(){if(!CN.on)return;CN.on=false;document.body.classList.remove('cine');G.paused=CN.wasPaused;G.shop=CN.wasShop;cam.fov=CFG.fov;cam.updateProjectionMatrix();const a=CN.after;CN.after=null;if(a)a();if(CN.def){const d=CN.def;CN.def=null;showMenu(d[0],d[1],d[2])}}
+function camShot(){const s=CN.shots[CN.i];if(!s)return;const k=ease(Math.min(1,CN.t/s.dur)),p=s.p,p2=s.p2||p,l=s.l,l2=s.l2||l,f=s.fov||60;cam.position.set(mix(p[0],p2[0],k),mix(p[1],p2[1],k),mix(p[2],p2[2],k));cam.lookAt(mix(l[0],l2[0],k),mix(l[1],l2[1],k),mix(l[2],l2[2],k));if(cam.fov!==f){cam.fov=f;cam.updateProjectionMatrix()}}
+function cineTick(dt){if(!CN.on)return;CN.t+=dt;const s=CN.shots[CN.i];if(s&&CN.t>=s.dur){CN.i++;CN.t=0;if(CN.i>=CN.shots.length)cineEnd();else cineText()}}
+{const _r=R.render;R.render=function(sc,c){if(CN.on&&c===cam)camShot();return _r.call(R,sc,c)}}
+{const _sm=showMenu;showMenu=function(t,b,r){if(CN.on){if(t!=='Paused')CN.def=[t,b,r];return}_sm(t,b,r)}}
+addEventListener('keydown',e=>{if(CN.on&&(e.code==='Space'||e.code==='Enter'||e.code==='Escape'||e.code==='KeyE')){e.preventDefault();cineEnd()}});
+const INTRO=[{p:[-10,45,55],p2:[0,32,-10],l:[0,0,-70],dur:5.5,text:'Long ago, the Kingdom of Lysar sang to the deep.'},{p:[-45,28,-60],p2:[-12,22,-88],l:[0,4,-118],l2:[0,4,-124],dur:5.5,text:'Then Chancellor Veth sealed the Hollow Throne, and the kingdom forgot its own name.'},{p:[6,30,-110],p2:[4,24,-150],l:[0,0,-180],dur:4.5,text:'Beneath it, something still listens.'},{p:[13,3.2,16],p2:[6,2.1,7],l:[2,1.4,-4],dur:5,text:'Now an Echo stirs. And you are all that remains.'}];
+$('play').addEventListener('click',()=>{if($('play').dataset.resume||G.t>1||G.ng||CN.on)return;let seen=0;try{seen=localStorage.getItem('echoesIntro')}catch(e){}if(seen)return;setTimeout(()=>{if(G.running&&G.t<4&&!CN.on){try{localStorage.setItem('echoesIntro','1')}catch(e){}cine(INTRO)}},350)});
+$('bnew').addEventListener('click',()=>{if($('bnew').textContent.startsWith('Tap again'))try{localStorage.removeItem('echoesIntro')}catch(e){}},true);
+{const _wd=wardenDown;wardenDown=function(){_wd();cine([{p:[8,4,-126],p2:[5,3.5,-129],l:[0,3,-141],dur:4.2,text:'The Warden falls. His sigil cracks, and the way to the Hollow Throne grinds open.'}])}}
+function epilogue(){cine([{p:[12,7,-203],p2:[-10,6,-203],l:[0,3,-213],dur:5,text:'The Echo fades. The Hollow Throne falls silent for the first time in centuries.'},{p:[0,40,-60],p2:[-30,34,-90],l:[-70,0,-104],dur:5.5,text:D.fr.rimeDead?'And the kingdom remembers its name.':'But far to the west, beyond a sealed gate, winter has never ended.'}])}
+// ---- Frostfall Reach: second area (west of the Wilds, x -90..-45, z -141..-66) ----
+const inFrost=(x,z)=>x<-45&&z<-66&&z>-141,FL=['Frost stone I: “Winter did not come to Frostfall. It was invited.”','Frost stone II: “The Warden’s sigil seals the gate. The Rimewarden seals the rest.”','Frost stone III: “Whoever bears the Rimeblade walks lightly through the cold.”'];
+HUM.rime={skin:0x9ac8e0,cloth:0x1a3050,armor:0x6a9ac8,trim:0xcfeaff,plume:0xcfeaff,wep:'blade',cape:1,big:1,glow:1};HP.rime=170;XPV.rime=350;
+const FR=0x56708e;
+box(-67.5,-66,45,2,8,FR);box(-45,-85,2,38,8,FR);box(-45,-123,2,38,8,FR);box(-89.5,-103.5,1.5,76,8,FR);box(-67.5,-141,45,2,8,FR);
+const GT=box(-45,-103,1.6,8,6.5,0x6a8ab0);box(-45,-103,2.4,10,2,0x8aa8c8,false,6.5);box(-45,-107.8,2.4,1.6,9,0x8aa8c8);box(-45,-98.2,2.4,1.6,9,0x8aa8c8);
+const gl2=new THREE.PointLight(0x66ccff,1.2,16);gl2.position.set(-42,3,-103);S.add(gl2);
+function openGate(silent){if(rects.includes(GT)){S.remove(GT.m);rects.splice(rects.indexOf(GT),1);const j=walls.indexOf(GT.m);if(j>=0)walls.splice(j,1)}D.fr.gate=1;gl2.intensity=0;if(!silent){souls(-45,-103,30,0x66ccff,1);ring(-45,-103,6,0x66ccff,.2,.9);sfx(300,.8,'sine',.1,500)}}
+{const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d'),im=g.createImageData(128,128);for(let y=0;y<128;y++)for(let x=0;x<128;x++){const a=Math.min(1,Math.min(x,127-x,y,127-y)/22),n=150+Math.random()*28,i=(y*128+x)*4;im.data[i]=n-6;im.data[i+1]=n+8;im.data[i+2]=n+34;im.data[i+3]=Math.round(255*a*a*(3-2*a))}g.putImageData(im,0,0);
+const sn=new THREE.Mesh(new THREE.PlaneGeometry(45,75),new THREE.MeshLambertMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false}));sn.rotation.x=-Math.PI/2;sn.position.set(-67.5,.05,-103.5);sn.receiveShadow=true;S.add(sn)}
+S.traverse(o=>{if(o.isInstancedMesh&&[1400,500,160,140].includes(o.count)){const m4=new THREE.Matrix4(),v=new THREE.Vector3();for(let i=0;i<o.count;i++){o.getMatrixAt(i,m4);v.setFromMatrixPosition(m4);if(v.x<-44&&v.x>-92&&v.z<-64&&v.z>-143){m4.makeScale(0,0,0);o.setMatrixAt(i,m4)}}o.instanceMatrix.needsUpdate=true}});
+{const ice=new THREE.Mesh(new THREE.CircleGeometry(8,32),new THREE.MeshStandardMaterial({color:0x9fd8ff,roughness:.05,metalness:.35,emissive:0x1a4a6a}));ice.rotation.x=-Math.PI/2;ice.position.set(-62,.07,-80);S.add(ice);
+const clear=(x,z)=>Math.hypot(x+62,z+80)>10.5&&!(x>-87&&x<-57&&z<-113)&&!(z>-110&&z<-96)&&Math.abs(x+45)>3;
+const N=42,tr=new THREE.InstancedMesh(new THREE.ConeGeometry(1.7,5.8,7),new THREE.MeshLambertMaterial({color:0xffffff}),N),o=new THREE.Object3D(),col=new THREE.Color();let n=0;
+for(let k=0;k<400&&n<N;k++){const x=-88+Math.random()*41,z=-68-Math.random()*71;if(!clear(x,z))continue;const sc=.8+Math.random()*.9;o.position.set(x,2.9*sc,z);o.scale.set(sc,sc,sc);o.rotation.set(0,Math.random()*6,0);o.updateMatrix();tr.setMatrixAt(n,o.matrix);tr.setColorAt(n,col.setHSL(.57+Math.random()*.05,.3,.45+Math.random()*.15));rects.push({x1:x-.6,x2:x+.6,z1:z-.6,z2:z+.6});n++}
+tr.count=n;tr.castShadow=tr.receiveShadow=true;S.add(tr);
+const M2=34,cr=new THREE.InstancedMesh(new THREE.OctahedronGeometry(.55),new THREE.MeshBasicMaterial({color:new THREE.Color(0x66ccff).multiplyScalar(1.6)}),M2);for(let k=0;k<M2;k++){let x,z;do{x=-88+Math.random()*41;z=-68-Math.random()*71}while(!clear(x,z));const sc=.6+Math.random()*1.1;o.position.set(x,sc*.9,z);o.scale.set(sc*.7,sc*2.2,sc*.7);o.rotation.set(0,Math.random()*6,Math.random()*.3-.15);o.updateMatrix();cr.setMatrixAt(k,o.matrix)}S.add(cr)}
+// keep
+const KP=0x6a86a8;box(-72.5,-117,23,1.6,7,KP);box(-84,-129,1.6,24,7,KP);box(-60,-129,1.6,24,7,KP);[-75.3,-68.7].forEach(x=>box(x,-117,1.6,2,9,0x8aa8c8));box(-72,-117,8,2,1.6,0x8aa8c8,false,7.4);
+[-80,-64].forEach(x=>cyl(x,-125,6,1));
+const BRZ=[[-77,-114],[-67,-114],[-86,-100],[-86,-86]].map(([x,z])=>{const b=new THREE.Mesh(new THREE.CylinderGeometry(.35,.25,1.1,8),M(0x4a5a70));b.position.set(x,.55,z);const f=new THREE.Mesh(new THREE.SphereGeometry(.3,8,8),new THREE.MeshBasicMaterial({color:new THREE.Color(0x8adfff).multiplyScalar(2.4)}));f.position.set(x,1.3,z);S.add(b,f);rects.push({x1:x-.4,x2:x+.4,z1:z-.4,z2:z+.4});return f});
+const kl2=new THREE.PointLight(0x66ccff,1.8,26);kl2.position.set(-72,5,-128);S.add(kl2);
+// lore stones
+const LS=[[-56,-100],[-80,-92],[-66,-110]].map(([x,z],i)=>{box(x,z,1.1,1.1,3,0x9ab8d8);SI.push({x,z,label:'Read the frost stone',on:()=>true,act(){say(FL[i]);if(!D.fr.fl[i]){D.fr.fl[i]=1;G.coins+=10;gainXp(25)}}});return{x,z}});
+[[-52,-90],[-86,-110],[-80,-126],[-62,-124]].forEach(([x,z])=>box(x,z,1.2,1.2,1.2,0x9a7040).m.userData.crate=true);[[-56,-112],[-78,-100]].forEach(a=>barrel(...a));
+[['heart',-60,-100],['ammo',-84,-84],['coin',-70,-96],['coin',-72,-96],['heart',-72,-112],['coin',-58,-72]].forEach(([t,x,z])=>pickup(t,x,z));
+// enemies
+function frostEnemy(type,x,z,wp){const e=enemy(500+E.length,x,z,type,wp);e.citadel=false;if(G.ng)e.hp=e.max=Math.round(e.max*(1+.5*G.ng));return e}
+function mkWr(x,z,wp){const e=frostEnemy('wraith',x,z,wp);e.bt=rr(2,5);e.m.traverse(o=>{if(o.material&&o!==e.m.userData.blob){o.material.transparent=true;o.material.opacity=.72}});WR.push(e);return e}
+frostEnemy('guard',-52,-96,[[-52,-96],[-52,-110]]);frostEnemy('guard',-86,-96,[[-86,-96],[-76,-104]]);frostEnemy('archer',-58,-84);frostEnemy('archer',-84,-76);
+frostEnemy('armor',-60,-92,[[-60,-92],[-60,-104]]);frostEnemy('armor',-84,-100,[[-84,-100],[-84,-88]]);frostEnemy('elite',-80,-112,[[-80,-112],[-76,-108]]);frostEnemy('elite',-64,-112,[[-64,-112],[-68,-108]]);
+mkWr(-70,-90,[[-70,-90],[-76,-100],[-64,-100]]);mkWr(-76,-104,[[-76,-104],[-66,-98]]);mkWr(-56,-120,[[-56,-120],[-56,-134],[-50,-134]]);
+const RIME=frostEnemy('rime',-72,-132);RIME.boss=true;RIME.name='The Rimewarden';RIME.m.scale.setScalar(2);const ECHO=E.find(e=>e.type==='echo');
+const chest=new THREE.Mesh(new THREE.BoxGeometry(1.2,.8,.8),M(0x9fd8ff,0x2a6a9a));chest.position.set(-72,.5,-138);chest.visible=false;S.add(chest);
+SI.push({x:-45,z:-100.5,label:'Examine the sealed Frostfall Gate',on:()=>!D.fr.gate&&G.stage<4,act(){say('The gate is sealed by the Citadel Warden’s sigil. Defeat him first.')}});
+SI.push({x:-45,z:-100.5,label:'Open the Frostfall Gate',on:()=>!D.fr.gate&&G.stage>=4,act(){openGate();cine([{p:[-34,6,-95],p2:[-39,4,-99],l:[-45,3,-103],dur:3.6,text:'The Warden’s sigil answers. The Frostfall Gate swings open.'}])}});
+SI.push({x:-72,z:-136,label:'Open the Frost chest',on:()=>D.fr.rimeDead&&!D.fr.chest,act(){D.fr.chest=1;D.fr.rime=1;D.fr.bp=(D.fr.bp||0)+2;chest.visible=false;G.coins+=150;G.pot=(G.pot||0)+3;souls(-72,-138,30,0x9adfff,1);ring(-72,-138,5,0x9adfff,.2,.9);sfx(900,.6,'sine',.1,600);pop('RIMEBLADE','+25% sword damage, +2 skill points, +150 coins, +3 potions')}});
+function rimeDown(){D.fr.rimeDead=1;chest.visible=!D.fr.chest;kl2.intensity=.8;pop('THE RIMEWARDEN FALLS','A chest glimmers at the back of the keep');cine([{p:[-66,4,-126],p2:[-78,5,-127],l:[-72,2,-133],dur:4.2,text:'The Rimewarden shatters. The frost begins to recede.'}])}
+function frostRestore(){if(D.fr.gate)openGate(true);chest.visible=!!D.fr.rimeDead&&!D.fr.chest;if(D.fr.rimeDead)kl2.intensity=.8}
+function frostHtml(){const f=D.fr;return '<h3>Frostfall Reach</h3><ul><li>'+ck(f.gate)+' Open the Frostfall Gate (needs the Warden’s sigil, west of the Wilds road)</li><li>'+ck(f.rimeDead)+' Defeat the Rimewarden</li><li>'+ck(f.chest)+' Claim the Rimeblade from the Frost chest</li><li>'+ck(f.fl.every(Boolean))+' Frost stones ('+f.fl.filter(Boolean).length+'/3)</li></ul>'}
+{const _w2=weather,FC=new THREE.Color(0xb4c8e0);weather=function(dt,tm){_w2(dt,tm);if(inFrost(P.x,P.z)){S.fog.color.lerp(FC,.8);S.fog.density+=.008;hemi.intensity*=.9;sun.intensity*=.55}}}
+function frostUpd(dt){const tm=performance.now()/1000;BRZ.forEach((f,i)=>f.scale.setScalar(.9+Math.sin(tm*9+i*2)*.12+Math.random()*.06));
+const b=E.find(e=>e.boss&&!e.dead&&e.st==='chase'&&Math.hypot(e.x-P.x,e.z-P.z)<45);if(b&&b.name)setT($('bbn'),b.name);
+if(!D.fr.introB&&!RIME.dead&&Math.hypot(RIME.x-P.x,RIME.z-P.z)<22){D.fr.introB=1;cine([{p:[-76,5,-121],p2:[-72,4,-124],l:[-72,3,-132],dur:4.6,text:'The Rimewarden: “Another warm heart wandering into my winter.”'}]);return}
+if(!RIME.dead&&RIME.st==='chase'){const dx=P.x-RIME.x,dz=P.z-RIME.z,d=Math.hypot(dx,dz),ph2=RIME.hp<RIME.max/2;RIME.vt=(RIME.vt===undefined?3:RIME.vt)-dt;if(RIME.vt<=0&&d<32){RIME.vt=ph2?2.6:3.8;const n=ph2?7:5;for(let k=0;k<n;k++){const a=Math.atan2(dx,dz)+(k-(n-1)/2)*.24;shoot(RIME.x,1.8,RIME.z,RIME.x+Math.sin(a)*20,1.4,RIME.z+Math.cos(a)*20,12,11,0x9adfff,'orb')}ring(RIME.x,RIME.z,3.5,0x9adfff,.1,.45);sfx(520,.3,'sine',.1,-250)}
+if(ph2&&!RIME.sm2){RIME.sm2=1;mkWr(RIME.x+4,RIME.z+3,[[RIME.x+4,RIME.z+3]]).st='chase';mkWr(RIME.x-4,RIME.z+3,[[RIME.x-4,RIME.z+3]]).st='chase';say('The Rimewarden calls the blizzard!')}}}
 // ---- Gamepad ----
 const PAD={prev:[],wrote:false,hint:false};
 function padUpd(dt){const gp=(navigator.getGamepads?[...navigator.getGamepads()]:[]).find(g=>g&&g.connected);if(!gp)return;const B=i=>gp.buttons[i]&&gp.buttons[i].pressed,dz=v=>Math.abs(v)<.18?0:v,pr=[];gp.buttons.forEach((b,i)=>pr[i]=b.pressed);const edge=i=>pr[i]&&!PAD.prev[i];
 if(!PAD.hint){PAD.hint=true;setTimeout(()=>say('Controller connected'),300)}
 if($('menu').style.display!=='none'){if(edge(0))$('play').click();PAD.prev=pr;return}
+if(CN.on){if(edge(0)||edge(1)||edge(9))cineEnd();PAD.prev=pr;return}
 if(!G.running){PAD.prev=pr;return}
 if(edge(9)){openMenu();PAD.prev=pr;return}
 const lx=dz(gp.axes[0]||0),ly=dz(gp.axes[1]||0),rx=dz(gp.axes[2]||0),ry=dz(gp.axes[3]||0),mag=Math.hypot(lx,ly);
@@ -815,7 +885,7 @@ if(B(6)){if(!K.KeyF){K.KeyF=true;P.parryT=.28}}else if(PAD.guard)K.KeyF=false;PA
 if(edge(1))dodge();if(edge(2))interact();if(edge(3))cycle();if(edge(5))echoBurst();if(edge(4))lockToggle();if(edge(11))P.crouch=!P.crouch;
 if(edge(12))usePotion();if(edge(13))throwStone();if(edge(14))toggleMap();if(edge(15))P.fp=!P.fp;if(edge(8))reload();
 PAD.prev=pr}
-const _v=visuals;visuals=function(dt){_v(dt);try{padUpd(dt);tick(dt)}catch(err){if(!D.err){D.err=1;console.error('addon: '+err.message)}}};
+const _v=visuals;visuals=function(dt){_v(dt);try{padUpd(dt);tick(dt);cineTick(dt)}catch(err){if(!D.err){D.err=1;console.error('addon: '+err.message)}}};
 window.__echoes.D=D;window.__echoes.SH=SH;window.__echoes.echoBurst=echoBurst;
 })();
 </script>
@@ -842,7 +912,7 @@ else if(type==='triangle'&&f<130&&d<=.06){noise(b,t,.05,'lowpass',700,150,vol*5)
 else if(type==='triangle'&&f>=205&&f<=240&&d<=.09){noise(b,t,.07,'highpass',1800,5000,vol*3);tone(b,t,f*.7,.08,'triangle',vol*2)}
 else{const soft=type==='sine'||type==='triangle';tone(b,t,f,d,type,vol*(soft?1:.6),0,soft?.3:.1,slide,soft?0:3200)}}catch(e){}};
 // ---- adaptive music ----
-const ROOT={explore:196,stealth:174.6,combat:220,dungeon:130.8},BPM={explore:72,stealth:56,combat:136,dungeon:48};
+const ROOT={explore:196,stealth:174.6,combat:220,dungeon:130.8,frost:146.8},BPM={explore:72,stealth:56,combat:136,dungeon:48,frost:58};
 const CH=[[0,3,7],[8,12,15],[3,7,10],[10,14,17]],hz=(r,s)=>r*Math.pow(2,s/12);
 let step=0,nextT=0,started=false;
 function pad(b,t,fr,d,v,lp,type='sawtooth'){const c=b.c,l=c.createBiquadFilter(),g=c.createGain();l.type='lowpass';l.frequency.value=lp;g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(v,t+d*.35);g.gain.linearRampToValueAtTime(.0001,t+d);l.connect(g);g.connect(b.musG);const q=c.createGain();q.gain.value=.5;g.connect(q);q.connect(b.rvIn);for(const f of fr)for(const dt of[-7,7]){const o=c.createOscillator();o.type=type;o.frequency.value=f;o.detune.value=dt;o.connect(l);o.start(t);o.stop(t+d+.1)}}
@@ -851,8 +921,9 @@ function music(b,m,s,t,e){const r=ROOT[m],ch=CH[Math.floor(s/(m==='combat'?8:16)
 if(m==='explore'){if(s%16===0){pad(b,t,cf,e*16,.045,900);tone(b,t,cf[0]/2,e*14,'sine',.12,b.musG,.2)}if(s%2===0&&Math.random()<.4)tone(b,t,hz(r*2,pick([...ch,ch[0]+12,ch[1]+12])),.9,'triangle',.07,b.musG,.7)}
 else if(m==='stealth'){if(s%16===0)pad(b,t,[r,r*1.5],e*16,.04,500,'triangle');if(s%8===0){kick(b,t,.1);kick(b,t+e*.9,.06)}if(s%6===3&&Math.random()<.5)tone(b,t,hz(r*4,pick(ch)),1.2,'sine',.04,b.musG,.9)}
 else if(m==='combat'){if(s%2===0)kick(b,t,.2);if(s%2===1)noise(b,t,.04,'highpass',7000,9000,.05,b.musG);if(s%8===4)noise(b,t,.14,'bandpass',1800,900,.12,b.musG,.2);const bl=[0,0,12,0,7,0,10,0][s%8];tone(b,t,hz(r/2,bl),e*.9,'sawtooth',.09,b.musG,0,0,420);if(s%8===0)pad(b,t,cf,e*8,.04,1300);if(s%4===1)tone(b,t,hz(r*2,pick(ch)),.25,'square',.03,b.musG,.3,0,2200)}
+else if(m==='frost'){if(s%16===0){pad(b,t,[r*2,r*3,r*4],e*16,.035,1800,'triangle');tone(b,t,r/2,e*15,'sine',.1,b.musG,.3)}if(s%2===0&&Math.random()<.35)tone(b,t,hz(r*4,pick([0,3,7,10,12])),1.6,'sine',.06,b.musG,.9)}
 else{if(s%16===0){pad(b,t,[r,r*Math.pow(2,1/12),r*1.5],e*16,.035,400,'sine');tone(b,t,r/2,e*15,'sine',.12,b.musG,.3)}if(s%4===0&&Math.random()<.14)tone(b,t,hz(r*4,pick([0,3,7,10,12])),2.4,'sine',.06,b.musG,1)}}
-function mode(){let m='explore';if(P.z<-142)m='dungeon';if(E.some(e=>!e.dead&&e.st==='search'))m='stealth';if(E.some(e=>!e.dead&&e.st==='chase'))m='combat';return m}
+function mode(){let m='explore';if(P.z<-142)m='dungeon';else if(P.x<-45&&P.z<-66&&P.z>-141)m='frost';if(E.some(e=>!e.dead&&e.st==='search'))m='stealth';if(E.some(e=>!e.dead&&e.st==='chase'))m='combat';return m}
 musicStart=function(){if(started)return;started=true;MU.on=true;let cur='explore';setInterval(()=>{try{const b=init();if(!b)return;const c=b.c;b.musG.gain.value=CFG.vol*.55;if(!G.running||G.paused||G.over||CFG.vol<=0){nextT=c.currentTime+.1;return}if(MU.on)MU.mode=cur=mode();if(nextT<c.currentTime)nextT=c.currentTime+.05;const e=60/BPM[cur]/2;while(nextT<c.currentTime+.3){music(b,cur,step++,nextT,e);nextT+=e}}catch(err){}},100)};
 // ---- low-health heartbeat ----
 let hb=0;const _v=visuals;visuals=function(dt){_v(dt);try{if(G.running&&!G.paused&&!G.over&&P.hp<P.max*.3){hb-=dt;if(hb<=0){hb=.85;const b=init();if(b){const t=b.c.currentTime,v=CFG.vol*.35;tone(b,t,70,.14,'sine',v,0,0,-25);tone(b,t+.17,60,.14,'sine',v*.7,0,0,-20)}}}}catch(e){}};
