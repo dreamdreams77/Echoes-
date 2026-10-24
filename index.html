@@ -679,7 +679,7 @@ const rr=(a,b)=>a+Math.random()*(b-a);
 $('hp').insertAdjacentHTML('beforeend','<span id="hpt"></span>');
 $('hud').insertAdjacentHTML('beforeend','<div id="prog"><div id="lvl"></div><div class="pbar xp"><i id="xpf"></i></div><div class="pbar rs"><i id="rsf"></i><span id="rst">ECHO</span></div></div><div id="chain"></div><div id="pop"></div>');
 const pop=(t,sub)=>{const p=$('pop');p.innerHTML='<b>'+t+'</b>'+(sub?'<small>'+sub+'</small>':'');p.classList.remove('on');void p.offsetWidth;p.classList.add('on')};
-$('hc').querySelector('ul').insertAdjacentHTML('beforeend','<li><b>X</b> Echo Burst: when the violet Echo meter is full, release a shockwave that stuns and damages everything near you. Hits, kills and parries fill it.</li>');
+$('hc').querySelector('ul').insertAdjacentHTML('beforeend','<li><b>Controller</b>: left stick move, right stick look, RT attack, LT guard, A jump, B dodge, X use, Y weapon, RB Echo Burst, LB lock on, D-pad up potion, down stone, left map, Start menu.</li><li><b>X</b> Echo Burst: when the violet Echo meter is full, release a shockwave that stuns and damages everything near you. Hits, kills and parries fill it.</li>');
 $('hm').querySelector('ul').insertAdjacentHTML('beforeend','<li><b>&#10022;</b> (top right) releases the Echo Burst when the Echo meter is full.</li>');
 {const ol=document.querySelector('#help .hp h3:nth-of-type(2) + ul');if(ol)ol.insertAdjacentHTML('beforeend','<li>Kill enemies for XP and level up (more health and damage). Twelve glowing Echo Shards are hidden across the realm and hum when you are near. Rest at the village bonfire to heal and save. Beware the blinking wraiths.</li>')}
 // ---- helpers ----
@@ -780,7 +780,22 @@ if(!play)return;
 if(D.chainT>0){D.chainT-=dt;if(D.chainT<=0){D.chain=0}}
 if((G.pc||0)>D.pc0){D.pc0=G.pc;addRes(25);pop('PARRY')}
 wraithUpd(dt)}
-const _v=visuals;visuals=function(dt){_v(dt);try{tick(dt)}catch(err){if(!D.err){D.err=1;console.error('addon: '+err.message)}}};
+// ---- Gamepad ----
+const PAD={prev:[],wrote:false,hint:false};
+function padUpd(dt){const gp=(navigator.getGamepads?[...navigator.getGamepads()]:[]).find(g=>g&&g.connected);if(!gp)return;const B=i=>gp.buttons[i]&&gp.buttons[i].pressed,dz=v=>Math.abs(v)<.18?0:v,pr=[];gp.buttons.forEach((b,i)=>pr[i]=b.pressed);const edge=i=>pr[i]&&!PAD.prev[i];
+if(!PAD.hint){PAD.hint=true;setTimeout(()=>say('Controller connected'),300)}
+if($('menu').style.display!=='none'){if(edge(0))$('play').click();PAD.prev=pr;return}
+if(!G.running){PAD.prev=pr;return}
+if(edge(9)){openMenu();PAD.prev=pr;return}
+const lx=dz(gp.axes[0]||0),ly=dz(gp.axes[1]||0),rx=dz(gp.axes[2]||0),ry=dz(gp.axes[3]||0),mag=Math.hypot(lx,ly);
+if(mag>0||PAD.wrote){K.jx=lx;K.jy=-ly;PAD.wrote=mag>0;if(mag>.92||B(10))K.ShiftLeft=true;else if(PAD.run)K.ShiftLeft=false;PAD.run=mag>.92||B(10)}
+if(!G.paused){P.yaw-=rx*dt*2.8*CFG.sens;P.pitch=Math.max(-1.2,Math.min(1.2,P.pitch-ry*dt*2.2*CFG.sens*(CFG.inv?-1:1)))}
+K.atk=B(7);if(B(0))K.Space=true;else if(PAD.sp)K.Space=false;PAD.sp=B(0);
+if(B(6)){if(!K.KeyF){K.KeyF=true;P.parryT=.28}}else if(PAD.guard)K.KeyF=false;PAD.guard=B(6);
+if(edge(1))dodge();if(edge(2))interact();if(edge(3))cycle();if(edge(5))echoBurst();if(edge(4))lockToggle();if(edge(11))P.crouch=!P.crouch;
+if(edge(12))usePotion();if(edge(13))throwStone();if(edge(14))toggleMap();if(edge(15))P.fp=!P.fp;if(edge(8))reload();
+PAD.prev=pr}
+const _v=visuals;visuals=function(dt){_v(dt);try{padUpd(dt);tick(dt)}catch(err){if(!D.err){D.err=1;console.error('addon: '+err.message)}}};
 window.__echoes.D=D;window.__echoes.SH=SH;window.__echoes.echoBurst=echoBurst;
 })();
 </script>
