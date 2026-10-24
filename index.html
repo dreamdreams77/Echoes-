@@ -684,7 +684,7 @@ loop();window.__echoes={P,G,E,W};
 "use strict";
 const D=G.dep={fr:{gate:0,chest:0,rime:0,bp:0,fl:[0,0,0],rimeDead:0,introB:0},sk:{},lvl:1,xp:0,res:0,chain:0,chainT:0,sh:0,shards:[],maxChain:0,wk:0,up2:0,pc0:0,pingT:0};
 const XPV={guard:20,archer:25,armor:45,elite:70,wraith:40,boss:200,echo:400};
-const xpNeed=l=>Math.round(50*Math.pow(l,1.45)),MAXLV=20;
+const xpNeed=l=>Math.round(35*Math.pow(l,1.3)),MAXLV=20;
 const rr=(a,b)=>a+Math.random()*(b-a);
 // ---- HUD elements ----
 $('hp').insertAdjacentHTML('beforeend','<span id="hpt"></span>');
@@ -821,11 +821,11 @@ addEventListener('keydown',e=>{if(CN.on&&(e.code==='Space'||e.code==='Enter'||e.
 const INTRO=[{p:[-10,45,55],p2:[0,32,-10],l:[0,0,-70],dur:5.5,text:'Long ago, the Kingdom of Lysar sang to the deep.'},{p:[-45,28,-60],p2:[-12,22,-88],l:[0,4,-118],l2:[0,4,-124],dur:5.5,text:'Then Chancellor Veth sealed the Hollow Throne, and the kingdom forgot its own name.'},{p:[6,30,-110],p2:[4,24,-150],l:[0,0,-180],dur:4.5,text:'Beneath it, something still listens.'},{p:[13,3.2,16],p2:[6,2.1,7],l:[2,1.4,-4],dur:5,text:'Now an Echo stirs. And you are all that remains.'}];
 $('play').addEventListener('click',()=>{if($('play').dataset.resume||G.t>1||G.ng||CN.on)return;let seen=0;try{seen=localStorage.getItem('echoesIntro')}catch(e){}if(seen)return;setTimeout(()=>{if(G.running&&G.t<4&&!CN.on){try{localStorage.setItem('echoesIntro','1')}catch(e){}cine(INTRO)}},350)});
 $('bnew').addEventListener('click',()=>{if($('bnew').textContent.startsWith('Tap again'))try{localStorage.removeItem('echoesIntro')}catch(e){}},true);
-{const _wd=wardenDown;wardenDown=function(){_wd();cine([{p:[8,4,-126],p2:[5,3.5,-129],l:[0,3,-141],dur:4.2,text:'The Warden falls. His sigil cracks, and the way to the Hollow Throne grinds open.'}])}}
+{const _wd=wardenDown;wardenDown=function(){_wd();cine([{p:[8,4,-126],p2:[5,3.5,-129],l:[0,3,-141],dur:4.2,text:'The Warden falls. His sigil cracks. The Hollow Throne door grinds open, and far to the west the Frostfall Gate stirs.'}])}}
 function epilogue(){cine([{p:[12,7,-203],p2:[-10,6,-203],l:[0,3,-213],dur:5,text:'The Echo fades. The Hollow Throne falls silent for the first time in centuries.'},{p:[0,40,-60],p2:[-30,34,-90],l:[-70,0,-104],dur:5.5,text:D.fr.rimeDead?'And the kingdom remembers its name.':'But far to the west, beyond a sealed gate, winter has never ended.'}])}
 // ---- Frostfall Reach: second area (west of the Wilds, x -90..-45, z -141..-66) ----
 const inFrost=(x,z)=>x<-45&&z<-66&&z>-141,FL=['Frost stone I: “Winter did not come to Frostfall. It was invited.”','Frost stone II: “The Warden’s sigil seals the gate. The Rimewarden seals the rest.”','Frost stone III: “Whoever bears the Rimeblade walks lightly through the cold.”'];
-HUM.rime={skin:0x9ac8e0,cloth:0x1a3050,armor:0x6a9ac8,trim:0xcfeaff,plume:0xcfeaff,wep:'blade',cape:1,big:1,glow:1};HP.rime=170;XPV.rime=350;
+HUM.rime={skin:0x9ac8e0,cloth:0x1a3050,armor:0x6a9ac8,trim:0xcfeaff,plume:0xcfeaff,wep:'blade',cape:1,big:1,glow:1};HP.rime=260;XPV.rime=350;
 const FR=0x56708e;
 box(-67.5,-66,45,2,8,FR);box(-45,-85,2,38,8,FR);box(-45,-123,2,38,8,FR);box(-89.5,-103.5,1.5,76,8,FR);box(-67.5,-141,45,2,8,FR);
 const GT=box(-45,-103,1.6,8,6.5,0x6a8ab0);box(-45,-103,2.4,10,2,0x8aa8c8,false,6.5);box(-45,-107.8,2.4,1.6,9,0x8aa8c8);box(-45,-98.2,2.4,1.6,9,0x8aa8c8);
@@ -861,11 +861,14 @@ SI.push({x:-45,z:-100.5,label:'Examine the sealed Frostfall Gate',on:()=>!D.fr.g
 SI.push({x:-45,z:-100.5,label:'Open the Frostfall Gate',on:()=>!D.fr.gate&&G.stage>=4,act(){openGate();cine([{p:[-34,6,-95],p2:[-39,4,-99],l:[-45,3,-103],dur:3.6,text:'The Warden’s sigil answers. The Frostfall Gate swings open.'}])}});
 SI.push({x:-72,z:-136,label:'Open the Frost chest',on:()=>D.fr.rimeDead&&!D.fr.chest,act(){D.fr.chest=1;D.fr.rime=1;D.fr.bp=(D.fr.bp||0)+2;chest.visible=false;G.coins+=150;G.pot=(G.pot||0)+3;souls(-72,-138,30,0x9adfff,1);ring(-72,-138,5,0x9adfff,.2,.9);sfx(900,.6,'sine',.1,600);pop('RIMEBLADE','+25% sword damage, +2 skill points, +150 coins, +3 potions')}});
 function rimeDown(){D.fr.rimeDead=1;chest.visible=!D.fr.chest;kl2.intensity=.8;pop('THE RIMEWARDEN FALLS','A chest glimmers at the back of the keep');cine([{p:[-66,4,-126],p2:[-78,5,-127],l:[-72,2,-133],dur:4.2,text:'The Rimewarden shatters. The frost begins to recede.'}])}
+{const _dm=drawMap;drawMap=function(){_dm();const c=$('mc'),x=c.getContext('2d'),sx=c.width/155,sz=c.height/265,X=a=>(a+95)*sx,Z=b=>(45-b)*sz,seen=G.seen.f||D.fr.gate;x.fillStyle=seen?'#b8d4e8':'#c4b48a';x.fillRect(X(-90),Z(-66),45*sx,75*sz);x.strokeStyle='#5a4a2a';x.lineWidth=2;x.strokeRect(X(-90),Z(-66),45*sx,75*sz);x.fillStyle='#2a2010';x.font='13px Georgia';x.textAlign='center';x.fillText(seen?'Frostfall Reach':'?',X(-67.5),Z(-66)+30);
+x.fillStyle=D.fr.gate?'#6a9ab8':'#c9453a';x.save();x.translate(X(-45),Z(-103));x.rotate(.785);x.fillRect(-4,-4,8,8);x.restore();if(G.stage>=4&&!D.fr.gate){x.fillStyle='#2a2010';x.textAlign='right';x.fillText('Frostfall Gate',X(-45)-8,Z(-103)+4)}
+x.fillStyle='#14202b';x.save();x.translate(X(P.x),Z(P.z));x.rotate(-P.yaw);x.beginPath();x.moveTo(0,-9);x.lineTo(-6,7);x.lineTo(6,7);x.fill();x.restore()}}
 function frostRestore(){if(D.fr.gate)openGate(true);chest.visible=!!D.fr.rimeDead&&!D.fr.chest;if(D.fr.rimeDead)kl2.intensity=.8}
 function frostHtml(){const f=D.fr;return '<h3>Frostfall Reach</h3><ul><li>'+ck(f.gate)+' Open the Frostfall Gate (needs the Warden’s sigil, west of the Wilds road)</li><li>'+ck(f.rimeDead)+' Defeat the Rimewarden</li><li>'+ck(f.chest)+' Claim the Rimeblade from the Frost chest</li><li>'+ck(f.fl.every(Boolean))+' Frost stones ('+f.fl.filter(Boolean).length+'/3)</li></ul>'}
 {const _w2=weather,FC=new THREE.Color(0xb4c8e0);weather=function(dt,tm){_w2(dt,tm);if(inFrost(P.x,P.z)){S.fog.color.lerp(FC,.8);S.fog.density+=.008;hemi.intensity*=.9;sun.intensity*=.55}}}
 function frostUpd(dt){const tm=performance.now()/1000;BRZ.forEach((f,i)=>f.scale.setScalar(.9+Math.sin(tm*9+i*2)*.12+Math.random()*.06));
-const b=E.find(e=>e.boss&&!e.dead&&e.st==='chase'&&Math.hypot(e.x-P.x,e.z-P.z)<45);if(b&&b.name)setT($('bbn'),b.name);
+if(inFrost(P.x,P.z))G.seen.f=1;const b=E.find(e=>e.boss&&!e.dead&&e.st==='chase'&&Math.hypot(e.x-P.x,e.z-P.z)<45);if(b&&b.name)setT($('bbn'),b.name);
 if(!D.fr.introB&&!RIME.dead&&Math.hypot(RIME.x-P.x,RIME.z-P.z)<22){D.fr.introB=1;cine([{p:[-76,5,-121],p2:[-72,4,-124],l:[-72,3,-132],dur:4.6,text:'The Rimewarden: “Another warm heart wandering into my winter.”'}]);return}
 if(!RIME.dead&&RIME.st==='chase'){const dx=P.x-RIME.x,dz=P.z-RIME.z,d=Math.hypot(dx,dz),ph2=RIME.hp<RIME.max/2;RIME.vt=(RIME.vt===undefined?3:RIME.vt)-dt;if(RIME.vt<=0&&d<32){RIME.vt=ph2?2.6:3.8;const n=ph2?7:5;for(let k=0;k<n;k++){const a=Math.atan2(dx,dz)+(k-(n-1)/2)*.24;shoot(RIME.x,1.8,RIME.z,RIME.x+Math.sin(a)*20,1.4,RIME.z+Math.cos(a)*20,12,11,0x9adfff,'orb')}ring(RIME.x,RIME.z,3.5,0x9adfff,.1,.45);sfx(520,.3,'sine',.1,-250)}
 if(ph2&&!RIME.sm2){RIME.sm2=1;mkWr(RIME.x+4,RIME.z+3,[[RIME.x+4,RIME.z+3]]).st='chase';mkWr(RIME.x-4,RIME.z+3,[[RIME.x-4,RIME.z+3]]).st='chase';say('The Rimewarden calls the blizzard!')}}}
