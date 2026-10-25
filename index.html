@@ -114,6 +114,7 @@ button.sk{text-align:left;font-size:16px;padding:8px 12px}button.sk span{float:r
 #cint.on{animation:cinT 1s forwards}@keyframes cinT{to{opacity:1}}
 #cins{position:absolute;right:16px;bottom:3vh;font-size:13px;color:#c9b98f;opacity:.7}
 body.cine #hud,body.cine #mbtn,body.cine #joy,body.cine #tb,body.cine #tt,body.cine #lowhp{display:none!important}
+#pflash{position:fixed;inset:0;pointer-events:none;background:radial-gradient(transparent 30%,#fff 130%);opacity:0;z-index:4}#pflash.on{animation:pfl .35s ease-out}@keyframes pfl{0%{opacity:.55}100%{opacity:0}}
 </style></head><body>
 <div id="hud"><div id="bb"><div id="bbn"></div><div class="bar"><i id="bbf"></i></div></div><div id="cross"></div><div id="obj"></div><div id="aw"></div><div id="msg"></div><div id="prompt"></div><div id="hp"><div id="hpf"></div></div><div id="stb"><i id="stf"></i></div><div id="vis"></div><pre id="dbg"></pre><canvas id="mm" width="110" height="110"></canvas><div id="ammo"></div></div>
 <div id="menu"><h1>Echoes of the Forgotten Kingdom</h1>
@@ -889,7 +890,7 @@ if(edge(1))dodge();if(edge(2))interact();if(edge(3))cycle();if(edge(5))echoBurst
 if(edge(12))usePotion();if(edge(13))throwStone();if(edge(14))toggleMap();if(edge(15))P.fp=!P.fp;if(edge(8))reload();
 PAD.prev=pr}
 const _v=visuals;visuals=function(dt){_v(dt);try{padUpd(dt);tick(dt);cineTick(dt)}catch(err){if(!D.err){D.err=1;console.error('addon: '+err.message)}}};
-window.__echoes.D=D;window.__echoes.SH=SH;window.__echoes.echoBurst=echoBurst;
+window.__echoes.D=D;window.__echoes.SH=SH;window.__echoes.echoBurst=echoBurst;window.__echoes.X={souls,ring,gainXp,pop,freeSpot,addRes,WR,mkWr,frostEnemy,inFrost,CN};
 })();
 </script>
 <script>if('serviceWorker' in navigator&&location.protocol.startsWith('http'))addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));document.addEventListener('visibilitychange',()=>{if(document.hidden&&G.running&&!G.over&&!G.paused)openMenu()})</script><script>
@@ -931,5 +932,71 @@ musicStart=function(){if(started)return;started=true;MU.on=true;let cur='explore
 // ---- low-health heartbeat ----
 let hb=0;const _v=visuals;visuals=function(dt){_v(dt);try{if(G.running&&!G.paused&&!G.over&&P.hp<P.max*.3){hb-=dt;if(hb<=0){hb=.85;const b=init();if(b){const t=b.c.currentTime,v=CFG.vol*.35;tone(b,t,70,.14,'sine',v,0,0,-25);tone(b,t+.17,60,.14,'sine',v*.7,0,0,-20)}}}}catch(e){}};
 window.__echoes.AUD={get bus(){return bus},get step(){return step}};
+})();
+</script><script>
+// ---------- Polish pass: fixes, graphics, Echo Arena, bestiary ----------
+(()=>{
+"use strict";
+const A=window.__echoes,X=A.X,D=A.D,rr=(a,b)=>a+Math.random()*(b-a);
+const store=()=>{try{return JSON.parse(localStorage.getItem('echoesPolish')||'{}')}catch(e){return{}}};
+D.bk={};D.best=0;
+// ---- bug fixes ----
+{const _dg=dodge;dodge=function(){if(G.paused||G.over)return;_dg()}}
+{const _say=say;say=function(t){if(D.q)return;_say(t)}}
+// autosave + continue after death
+let lastSave=0;const quietSave=()=>{D.q=1;try{save()}finally{D.q=0}};
+{const _die=die;die=function(){_die();try{if(localStorage.getItem('echoes')){$('play').textContent='Continue from last save';sessionStorage.setItem('echoesRetry','1')}}catch(e){}}}
+try{if(sessionStorage.getItem('echoesRetry')&&localStorage.getItem('echoes')){sessionStorage.removeItem('echoesRetry');D.pending=1;$('mt').textContent='You wake at your last save. Press Continue.';$('play').textContent='Continue'}}catch(e){}
+$('play').addEventListener('click',()=>{if(D.pending){D.pending=0;loadSave()}},true);
+// NG+ keeps the Rimeblade
+{const _v=victory;victory=function(){_v();try{const c=JSON.parse(localStorage.getItem('echoesLvl')||'null');if(c&&typeof c==='object'){c.rime=D.fr.rime;localStorage.setItem('echoesLvl',JSON.stringify(c))}}catch(e){}}}
+try{if(G.ng){const c=JSON.parse(localStorage.getItem('echoesLvl')||'null');if(c&&c.rime)D.fr.rime=1}}catch(e){}
+// bestiary + persistence
+{const _h=hitEnemy;hitEnemy=function(e,d){const was=e.dead;_h(e,d);if(!was&&e.dead)D.bk[e.type]=(D.bk[e.type]||0)+1}}
+{const _s=save;save=function(){_s();try{localStorage.setItem('echoesPolish',JSON.stringify({bk:D.bk,best:D.best}))}catch(e){}}}
+{const _l=loadSave;loadSave=function(){const r=_l();if(r){const s=store();D.bk=s.bk||{};D.best=s.best||0}return r}}
+{const s=store();D.best=s.best||0}
+{const NAMES={guard:'Guards',archer:'Archers',armor:'Armored brutes',elite:'Elites',wraith:'Wraiths',boss:'The Warden',echo:'The Echo',rime:'The Rimewarden'};const _ah=achHtml;achHtml=function(){const k=Object.keys(D.bk);return '<h3>Bestiary</h3><ul>'+(k.length?k.map(t=>'<li>'+(NAMES[t]||t)+': '+D.bk[t]+'</li>').join(''):'<li><i>Nothing defeated yet</i></li>')+'</ul>'+(D.best?'<h3>Echo Arena</h3><p>Best wave: '+D.best+'</p>':'')+_ah()}}
+// ---- graphics: bullet tracers ----
+const TR=[];for(let i=0;i<10;i++){const g=new THREE.CylinderGeometry(.012,.012,1,5);g.rotateX(Math.PI/2);g.translate(0,0,.5);const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:new THREE.Color(0xffd890).multiplyScalar(2.6),transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false}));m.visible=false;m.frustumCulled=false;S.add(m);TR.push({m,l:0})}let tri=0;
+function tracers(n){const base=dir(),o=MF.position.clone();for(let i=0;i<n;i++){const d=base.clone().add(new THREE.Vector3((Math.random()-.5)*(n>1?.14:.01),(Math.random()-.5)*(n>1?.14:.01),(Math.random()-.5)*(n>1?.14:.01))).normalize();ray.set(o,d);ray.far=60;const h=ray.intersectObjects(walls)[0],len=h?h.distance:45,q=TR[tri++%TR.length];q.m.position.copy(o);q.m.lookAt(o.clone().addScaledVector(d,len));q.m.scale.set(1,1,len);q.l=.09;q.m.visible=true}}
+{const _at=attack;attack=function(){const w=W[P.wp],m0=w.mag;_at();if(!w.melee&&w.mag<m0)tracers(w.pel||1)}}
+// ---- graphics: footprints in snow ----
+const FP=[];for(let i=0;i<48;i++){const m=new THREE.Mesh(new THREE.PlaneGeometry(.26,.42),new THREE.MeshBasicMaterial({color:0x5f7a98,transparent:true,opacity:0,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-3}));m.rotation.x=-Math.PI/2;m.visible=false;S.add(m);FP.push({m,l:0})}let fpi=0,fpx=0,fpz=0,fps=1;
+function footprints(dt){for(const f of FP)if(f.l>0){f.l-=dt;f.m.material.opacity=Math.max(0,f.l/22)*.45;if(f.l<=0)f.m.visible=false}
+if(!G.running||G.paused||P.y>.2||!X.inFrost(P.x,P.z))return;if(Math.hypot(P.x-fpx,P.z-fpz)>.7){fpx=P.x;fpz=P.z;fps=-fps;const f=FP[fpi++%FP.length],a=P.mv!==undefined?P.mv:P.yaw;f.m.position.set(P.x+Math.cos(a)*.16*fps,.07,P.z-Math.sin(a)*.16*fps);f.m.rotation.z=a;f.l=22;f.m.visible=true}}
+// ---- graphics: aurora, moon, twinkling stars ----
+const AUR=new THREE.Mesh(new THREE.PlaneGeometry(300,80),new THREE.ShaderMaterial({transparent:true,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,fog:false,uniforms:{uT:{value:0},uA:{value:0}},vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:'uniform float uT,uA;varying vec2 vUv;void main(){float w=sin(vUv.x*7.+uT*.35+sin(vUv.x*15.+uT*.6)*.9),y=vUv.y;float band=smoothstep(.05,.5,y)*smoothstep(1.,.5,y);vec3 c=mix(vec3(.15,.95,.6),vec3(.55,.3,1.),clamp(y+.25*w,0.,1.));gl_FragColor=vec4(c*1.6,band*(.45+.45*w)*uA);}'}));
+AUR.position.set(-130,105,-95);AUR.lookAt(0,40,0);AUR.renderOrder=2;sky.add(AUR);
+const MOON=(()=>{const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d'),r=g.createRadialGradient(64,64,6,64,64,64);r.addColorStop(0,'rgba(235,240,255,1)');r.addColorStop(.28,'rgba(215,225,255,.95)');r.addColorStop(.34,'rgba(170,190,255,.35)');r.addColorStop(1,'rgba(140,160,255,0)');g.fillStyle=r;g.fillRect(0,0,128,128);const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),blending:THREE.AdditiveBlending,fog:false,depthWrite:false,transparent:true,opacity:0}));s.scale.set(48,48,1);s.position.set(-95,130,105);sky.add(s);return s})();
+const STARS=sky.children.find(o=>o.isPoints);
+// ---- graphics: level-up light pillar, parry flash ----
+const PIL=new THREE.Mesh(new THREE.CylinderGeometry(.9,1.1,14,16,1,true),new THREE.MeshBasicMaterial({color:new THREE.Color(0xffe08a).multiplyScalar(2),transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));PIL.visible=false;S.add(PIL);let pilT=0,lv0=D.lvl,pc0=G.pc||0;
+const fl=document.createElement('div');fl.id='pflash';document.body.appendChild(fl);
+// ---- Echo Arena: endless waves in Frostfall Reach ----
+const AR={x:-76,z:-80,on:false,wave:0,alive:[],next:0};
+{const rg=new THREE.Mesh(new THREE.RingGeometry(8.6,9.2,56),new THREE.MeshBasicMaterial({color:0x66ccff,transparent:true,opacity:.4,side:THREE.DoubleSide,depthWrite:false}));rg.rotation.x=-Math.PI/2;rg.position.set(AR.x,.08,AR.z);S.add(rg);AR.ring=rg}
+const purge=e=>{S.remove(e.m);if(e.hb){S.remove(e.hb.b);S.remove(e.hb.f)}if(e.ic)S.remove(e.ic);const i=E.indexOf(e);if(i>=0)E.splice(i,1);const j=X.WR.indexOf(e);if(j>=0)X.WR.splice(j,1)};
+function arenaWave(n){AR.wave=n;AR.alive=[];const cnt=Math.min(11,2+n);for(let i=0;i<cnt;i++){const a=i/cnt*6.283+Math.random()*.5,r=Math.random();let [x,z]=X.freeSpot(AR.x+Math.cos(a)*9,AR.z+Math.sin(a)*9),type='guard';if(n>=2&&r<.25)type='archer';if(n>=3&&r>.7)type='armor';if(n>=5&&r>.82)type='elite';
+let e;if((n>=4&&i%4===3)||type==='wraith')e=X.mkWr(x,z,[[x,z]]);else e=X.frostEnemy(type,x,z,[[x,z]]);
+if(n%5===0&&i===0){e=X.frostEnemy('elite',x,z,[[x,z]]);e.hp=e.max=e.max*3;e.m.scale.setScalar(1.35);e.big=1}
+e.hp=e.max=Math.round(e.max*(1+.07*n));e.st='chase';e.aw=1;e.tr=1;AR.alive.push(e)}
+X.pop('WAVE '+n,cnt+' foes'+(n%5===0?' (champion!)':''))}
+function arenaEnd(){AR.on=false;AR.ring.material.color.setHex(0x66ccff);AR.alive.forEach(e=>{if(!e.dead)purge(e)});AR.alive=[]}
+SI.push({x:AR.x,z:AR.z,label:'Challenge the Echo Arena (endless waves)',on:()=>D.fr.rimeDead&&!AR.on,act(){AR.on=true;AR.ring.material.color.setHex(0xff7a4a);X.pop('ECHO ARENA','Survive as many waves as you can');setTimeout(()=>arenaWave(1),1200)}});
+SI.push({x:AR.x,z:AR.z,label:'End the trial and claim your rewards',on:()=>AR.on,act(){say('Trial ended at wave '+AR.wave+'.');arenaEnd()}});
+function arenaTick(dt){const now=performance.now()/1000;for(const e of E.filter(e=>e.tr&&e.dead)){e.dd=e.dd||now;if(now-e.dd>6)purge(e)}
+if(!AR.on||CN_on())return;if(AR.alive.length&&AR.alive.every(e=>e.dead)&&now>AR.next){AR.next=now+4;const w=AR.wave;G.coins+=10*w;X.gainXp(40*w);if(w>D.best){D.best=w;try{localStorage.setItem('echoesPolish',JSON.stringify({bk:D.bk,best:D.best}))}catch(e){}}if(w%5===0&&(D.fr.ap||0)<3){D.fr.ap=(D.fr.ap||0)+1;D.fr.bp=(D.fr.bp||0)+1;say('Arena trophy: +1 skill point')}else say('Wave '+w+' cleared: +'+10*w+' coins');setTimeout(()=>{if(AR.on)arenaWave(w+1)},3000);AR.alive=[]}}
+const CN_on=()=>X.CN.on;
+// ---- per-frame ----
+let t0=0;
+const _v=visuals;visuals=function(dt){_v(dt);try{const tm=performance.now()/1000,play=G.running&&!G.paused&&!G.over;
+for(const q of TR)if(q.l>0){q.l-=dt;q.m.material.opacity=q.l/.09*.85;if(q.l<=0)q.m.visible=false}
+footprints(dt);
+const kk=Math.min(1,G.t/1200),fr=X.inFrost(P.x,P.z);AUR.material.uniforms.uT.value=tm;AUR.material.uniforms.uA.value+=((fr?1:.12+.4*kk)-AUR.material.uniforms.uA.value)*Math.min(1,dt*1.5);MOON.material.opacity=.25+.7*kk;if(STARS)STARS.material.opacity=.55+.2*Math.sin(tm*2.3);
+if(D.lvl>lv0){lv0=D.lvl;pilT=1.4;PIL.position.set(P.x,7,P.z);PIL.visible=true}if(pilT>0){pilT-=dt;PIL.position.set(P.x,7,P.z);PIL.material.opacity=Math.max(0,pilT/1.4)*.55;PIL.scale.set(1+(1.4-pilT)*.5,1,1+(1.4-pilT)*.5);if(pilT<=0)PIL.visible=false}
+if((G.pc||0)>pc0){pc0=G.pc;fl.classList.remove('on');void fl.offsetWidth;fl.classList.add('on')}
+arenaTick(dt);if(play&&G.t-lastSave>120&&P.hp>P.max*.4&&!E.some(e=>!e.dead&&e.st==='chase')){lastSave=G.t;quietSave()}
+}catch(err){if(!D.perr){D.perr=1;console.error('polish: '+err.message)}}};
 })();
 </script></body></html>
