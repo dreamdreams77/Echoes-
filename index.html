@@ -2,6 +2,11 @@
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Echoes of the Forgotten Kingdom</title>
+<meta name="description" content="A free stealth-action adventure that runs in your browser. Sneak, fight and unleash the Echo across a forgotten kingdom. Works offline.">
+<meta property="og:type" content="website"><meta property="og:title" content="Echoes of the Forgotten Kingdom"><meta property="og:description" content="A free stealth-action adventure in your browser. Sneak, fight and unleash the Echo."><meta property="og:url" content="https://dreamdreams77.github.io/Echoes-/"><meta property="og:image" content="https://dreamdreams77.github.io/Echoes-/assets/share.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Echoes of the Forgotten Kingdom"><meta name="twitter:image" content="https://dreamdreams77.github.io/Echoes-/assets/share.jpg">
+<link rel="apple-touch-icon" href="icon-180.png">
+<script>(function(){window.__fail=function(t,m){var d=document.createElement("div");d.style.cssText="position:fixed;left:0;top:0;right:0;bottom:0;z-index:999;background:#0a1118;color:#f3e6c4;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;font:20px/1.5 Georgia,serif";d.innerHTML="<h2 style=\"color:#e8a23a;font-weight:400\">"+t+"</h2><p style=\"max-width:520px\">"+m+"</p>";document.documentElement.appendChild(d)};try{var c=document.createElement("canvas");if(!(window.WebGLRenderingContext&&(c.getContext("webgl2")||c.getContext("webgl"))))__fail("This device cannot run the game","Echoes needs WebGL. Try a recent Chrome, Edge, Firefox or Safari, and make sure hardware acceleration is turned on.")}catch(e){__fail("This device cannot run the game","Echoes needs WebGL. Try a recent Chrome, Edge, Firefox or Safari.")}})()</script>
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#14202b"><link rel="icon" href="icon.svg" type="image/svg+xml">
 <style>
 @font-face{font-family:'IM Fell English';src:url(lib/im-fell-english-latin-400-normal.woff2) format('woff2');font-display:swap}
@@ -116,6 +121,8 @@ button.sk{text-align:left;font-size:16px;padding:8px 12px}button.sk span{float:r
 body.cine #hud,body.cine #mbtn,body.cine #joy,body.cine #tb,body.cine #tt,body.cine #lowhp{display:none!important}
 #pflash{position:fixed;inset:0;pointer-events:none;background:radial-gradient(transparent 30%,#fff 130%);opacity:0;z-index:4}#pflash.on{animation:pfl .35s ease-out}@keyframes pfl{0%{opacity:.55}100%{opacity:0}}
 .ic svg{width:18px;height:18px;stroke:var(--amber);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;vertical-align:-3px;margin-right:6px}
+#tip{position:fixed;left:50%;top:32%;transform:translateX(-50%) translateY(10px);max-width:min(88vw,560px);padding:10px 16px;background:#0a1118e6;border:1px solid var(--amber);border-radius:6px;color:var(--ink);text-align:center;font-size:clamp(14px,3.6vw,18px);line-height:1.4;opacity:0;transition:opacity .4s,transform .4s;z-index:4;pointer-events:none}#tip.on{opacity:1;transform:translateX(-50%)}body.cine #tip{display:none}
+#cred{display:none;position:fixed;inset:0;z-index:16;flex-direction:column;align-items:center;justify-content:safe center;gap:8px;background:radial-gradient(ellipse at 50% 30%,#1c3140,#05080c);text-align:center;overflow-y:auto;padding:20px;box-sizing:border-box}#cred h2{margin:0;font-weight:400;color:var(--amber);font-size:clamp(24px,5vw,40px)}#cred .cs{letter-spacing:.3em;text-transform:uppercase;color:#c9b98f;font-size:13px;margin:0 0 10px}#cred .cl p{margin:0 0 14px;line-height:1.5}#cred b{color:var(--amber);font-weight:400}#cred small{color:#9a8f72}
 </style></head><body>
 <div id="hud"><div id="bb"><div id="bbn"></div><div class="bar"><i id="bbf"></i></div></div><div id="cross"></div><div id="obj"></div><div id="aw"></div><div id="msg"></div><div id="prompt"></div><div id="hp"><div id="hpf"></div></div><div id="stb"><i id="stf"></i></div><div id="vis"></div><pre id="dbg"></pre><canvas id="mm" width="110" height="110"></canvas><div id="ammo"></div></div>
 <div id="menu"><h1>Echoes of the Forgotten Kingdom</h1>
@@ -137,6 +144,7 @@ body.cine #hud,body.cine #mbtn,body.cine #joy,body.cine #tb,body.cine #tt,body.c
 <div id="lowhp"></div>
 <div id="joy"><div id="knob"></div></div><div id="tb"></div><div id="tt"></div>
 <script src="lib/three.min.js"></script>
+<script>if(!window.THREE)__fail("Could not load the game files","Check your internet connection and reload the page. After one successful load the game also works offline.")</script>
 <script src="lib/CopyShader.js"></script>
 <script src="lib/LuminosityHighPassShader.js"></script>
 <script src="lib/EffectComposer.js"></script>
@@ -676,7 +684,7 @@ if(P.shake>0){cam.position.x+=(Math.random()-.5)*P.shake*.4;cam.position.y+=(Mat
 sun.position.set(P.x+40,60,P.z+20);sun.target.position.set(P.x,0,P.z);
 $('hpf').style.width=Math.max(0,P.hp/P.max*100)+'%';$('stf').style.width=P.sta+'%';drawMM(dt);visUpd();$('hud').style.boxShadow=P.hurt>0?'inset 0 0 140px #c9453a':'';$('hpf').style.background=P.hurt?'#fff':'';$('cross').style.display=W[P.wp].melee?'none':'block';
 const n=nearest();setT($('prompt'),n?(TOUCH?n[1].replace('E — ','Tap USE: '):n[1]):'');
-setH($('obj'),`<b>Objective</b><br>${STAGES[G.stage]} <b>${objDir()}</b><br><small>Bonus: disable the Citadel alarm${G.alarmOff?' ✓':''}<br>Bonus: Sunken Temple riddle (east of path)${G.temple?' ✓':''}<br>Bonus: Shattered Capital relic${G.relic?' ✓':''}<br>Lore ${G.lm.filter(Boolean).length}/3 · Coins ${G.coins} \u00b7 Potions ${G.pot||0}</small><br><small>${P.crouch?'Sneaking':''}</small>`);
+setH($('obj'),`<b>Objective</b><br>${STAGES[G.stage]} <b>${objDir()}</b><br><small>Bonus: disable the Citadel alarm${G.alarmOff?' ✓':''}<br>Bonus: Sunken Temple riddle (east of path)${G.temple?' ✓':''}<br>Bonus: Shattered Capital relic${G.relic?' ✓':''}<br>${(window.__echoes&&window.__echoes.X&&window.__echoes.X.hint)?window.__echoes.X.hint():''}Lore ${G.lm.filter(Boolean).length}/3 · Coins ${G.coins} \u00b7 Potions ${G.pot||0}</small><br><small>${P.crouch?'Sneaking':''}</small>`);
 dbgUpd();weather(dt,performance.now()/1000);if(window.COMP&&CFG.fx){GRADE.uniforms.time.value=performance.now()/1000%10;GRADE.uniforms.low.value=Math.max(0,1-P.hp/(P.max*.4))*(.75+.25*Math.sin(performance.now()/180));COMP.render()}else R.render(S,cam)}
 loop();window.__echoes={P,G,E,W};
 </script>
@@ -824,7 +832,7 @@ const INTRO=[{p:[-10,45,55],p2:[0,32,-10],l:[0,0,-70],dur:5.5,text:'Long ago, th
 $('play').addEventListener('click',()=>{if($('play').dataset.resume||G.t>1||G.ng||CN.on)return;let seen=0;try{seen=localStorage.getItem('echoesIntro')}catch(e){}if(seen)return;setTimeout(()=>{if(G.running&&G.t<4&&!CN.on){try{localStorage.setItem('echoesIntro','1')}catch(e){}cine(INTRO)}},350)});
 $('bnew').addEventListener('click',()=>{if($('bnew').textContent.startsWith('Tap again'))try{localStorage.removeItem('echoesIntro')}catch(e){}},true);
 {const _wd=wardenDown;wardenDown=function(){_wd();cine([{p:[8,4,-126],p2:[5,3.5,-129],l:[0,3,-141],dur:4.2,text:'The Warden falls. His sigil cracks. The Hollow Throne door grinds open, and far to the west the Frostfall Gate stirs.'}])}}
-function epilogue(){cine([{p:[12,7,-203],p2:[-10,6,-203],l:[0,3,-213],dur:5,text:'The Echo fades. The Hollow Throne falls silent for the first time in centuries.'},{p:[0,40,-60],p2:[-30,34,-90],l:[-70,0,-104],dur:5.5,text:D.fr.rimeDead?'And the kingdom remembers its name.':'But far to the west, beyond a sealed gate, winter has never ended.'}])}
+function epilogue(){cine([{p:[12,7,-203],p2:[-10,6,-203],l:[0,3,-213],dur:5,text:'The Echo fades. The Hollow Throne falls silent for the first time in centuries.'},{p:[0,40,-60],p2:[-30,34,-90],l:[-70,0,-104],dur:5.5,text:D.fr.rimeDead?'And the kingdom remembers its name.':'But far to the west, beyond a sealed gate, winter has never ended.'}],()=>{if(window.showCredits)window.showCredits()})}
 // ---- Frostfall Reach: second area (west of the Wilds, x -90..-45, z -141..-66) ----
 const inFrost=(x,z)=>x<-45&&z<-66&&z>-141,FL=['Frost stone I: “Winter did not come to Frostfall. It was invited.”','Frost stone II: “The Warden’s sigil seals the gate. The Rimewarden seals the rest.”','Frost stone III: “Whoever bears the Rimeblade walks lightly through the cold.”'];
 HUM.rime={skin:0x9ac8e0,cloth:0x1a3050,armor:0x6a9ac8,trim:0xcfeaff,plume:0xcfeaff,wep:'blade',cape:1,big:1,glow:1};HP.rime=260;XPV.rime=350;
@@ -1044,5 +1052,33 @@ load('sky',t=>{t.wrapS=THREE.RepeatWrapping;sky.material.map=t;sky.material.need
 load('ground',t=>{t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(120,120);t.anisotropy=LOWQ?1:4;ground.material.map=t;ground.material.needsUpdate=true});
 load('brick',t=>{TEXB.image=t.image;TEXB.needsUpdate=true});
 if(M.title)$('menu').style.backgroundImage='linear-gradient(#0008,#000a),url(assets/'+M.title+')',$('menu').style.backgroundSize='cover'}).catch(()=>{})}catch(e){}
+})();
+</script><script>
+// ---------- Launch pass: tips, objective hints, credits ----------
+(()=>{
+"use strict";
+const A=window.__echoes,X=A.X,D=A.D;
+// objective hint lines (inserted into the objective panel by the main loop)
+X.hint=()=>{let h='';if(G.stage>=4)h+=D.fr.rimeDead?'Bonus: Frostfall Reach cleared ✓<br>':'Bonus: Frostfall Reach, west of the Wilds road'+(D.fr.gate?'':' (sealed gate)')+'<br>';return h+'Echo Shards '+D.sh+'/12<br>'};
+// ---- contextual tips ----
+let seen={};try{seen=JSON.parse(localStorage.getItem('echoesTips')||'{}')}catch(e){}
+const q=[],el=document.createElement('div');el.id='tip';document.body.appendChild(el);let busy=0,acc=0;
+const kb=(d,t)=>TOUCH?t:d;
+function tip(id,txt){if(seen[id])return;seen[id]=1;try{localStorage.setItem('echoesTips',JSON.stringify(seen))}catch(e){}q.push(txt)}
+function check(){if(!G.running||G.paused||G.over||X.CN.on)return;const near=(f,r)=>E.some(e=>!e.dead&&f(e)&&Math.hypot(e.x-P.x,e.z-P.z)<r);
+if(G.t>3)tip('move',kb('Move with W A S D and look with the mouse. Press E to talk. Find Elder Maren in the village.','Left stick moves, drag the right side to look, tap USE to talk. Find Elder Maren in the village.'));
+if(G.t>20&&near(e=>e.st==='patrol',22))tip('sneak',kb('Guards patrol ahead. Sneak (C) up behind an unaware guard for a big hit, or toss a stone (G) to lure them away.','Guards patrol ahead. Sneak with the crouch button behind an unaware guard for a big hit, or use Toss to lure them away.'));
+if(near(e=>e.st==='chase',7))tip('parry',kb('Tap F just before a hit lands to parry and stun the attacker. Dodge with Q.','Tap the shield just before a hit lands to parry and stun the attacker. Roll with the dodge button.'));
+if(D.res>=100)tip('echo',kb('The Echo meter is full. Press X to unleash an Echo Burst.','The Echo meter is full. Tap the star button to unleash an Echo Burst.'));
+if(D.lvl>1)tip('lvl',kb('You gained a skill point. Press K to spend it.','You gained a skill point. Open Menu, then Skills, to spend it.'));
+if(P.hp<P.max*.35)tip('low',(G.pot||0)>0?kb('Low health! Press Z to drink a potion.','Low health! Tap the potion button.'):'Low health! Rest at the village bonfire, or look for hearts from fallen foes.');
+if(X.SH_near&&X.SH_near())tip('shard','You hear a faint hum: an Echo Shard is nearby. There are twelve to find.');
+if(G.stage>=4)tip('frost','The Warden’s sigil is yours. Far to the west of the Wilds road, the Frostfall Gate will now open.');
+if(D.fr&&D.fr.rimeDead)tip('arena','The Echo Arena is open in Frostfall Reach, beside the frozen lake. How many waves can you survive?')}
+X.SH_near=()=>A.SH.some(s=>s.g.visible&&Math.hypot(P.x-s.x,P.z-s.z)<14);
+{const _v=visuals;visuals=function(dt){_v(dt);try{acc+=dt;if(acc>.5){acc=0;check()}if(!busy&&q.length&&G.running&&!G.paused&&!X.CN.on){busy=1;el.textContent=q.shift();el.classList.add('on');setTimeout(()=>{el.classList.remove('on');setTimeout(()=>{busy=0},700)},7500)}}catch(e){}}}
+// ---- credits ----
+{const o=document.createElement('div');o.id='cred';o.innerHTML='<h2>Echoes of the Forgotten Kingdom</h2><p class="cs">Iron &middot; Ember &middot; Echo</p><div class="cl"><p><b>Created by</b><br>dreamdreams77</p><p><b>Engine</b><br>three.js (MIT License)</p><p><b>Typeface</b><br>IM Fell English by Igino Marini (SIL Open Font License)</p><p><b>Art, music and sound</b><br>Drawn and synthesized in code, no outside assets</p><p><small>Full license texts are in THIRD_PARTY_LICENSES.md</small></p><p>Thank you for playing.</p></div><button id="credx">Close</button>';document.body.appendChild(o);
+$('bset').insertAdjacentHTML('afterend','<button class="alt" id="bcred">Credits</button>');window.showCredits=()=>{o.style.display='flex'};$('bcred').onclick=window.showCredits;$('credx').onclick=()=>{o.style.display='none'}}
 })();
 </script></body></html>
